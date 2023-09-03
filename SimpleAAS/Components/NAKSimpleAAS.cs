@@ -41,6 +41,8 @@ namespace NAK.SimpleAAS.Components
         {
             if (avatar == null)
                 avatar = GetComponentInParent<CVRAvatar>();
+            if (prop == null)
+                prop = GetComponentInParent<CVRSpawnable>();
         }
 
         #endregion
@@ -48,6 +50,7 @@ namespace NAK.SimpleAAS.Components
         #region Variables
 
         public CVRAvatar avatar;
+        public CVRSpawnable prop;
 
         [FormerlySerializedAs("baseOverrideController")]
         public AnimatorOverrideController overrideController;
@@ -61,27 +64,33 @@ namespace NAK.SimpleAAS.Components
 
         public int GetParameterSyncUsage()
         {
-            if (avatar == null || customControllers == null)
+            if ((avatar == null && prop == null) || customControllers == null)
                 return 0;
 
             var animatorParameterNames = new HashSet<string>();
             var syncedValues = 0;
             var syncedBooleans = 0;
 
-            foreach (AnimatorController controller in customControllers)
-            {
-                if (controller == null)
-                    continue;
-
-                foreach (AnimatorControllerParameter parameter in controller.parameters)
+            if (avatar != null) {
+                foreach (AnimatorController controller in customControllers)
                 {
-                    if (animatorParameterNames.Contains(parameter.name))
+                    if (controller == null)
                         continue;
-                    
-                    CountParameterTypes(parameter, ref syncedValues, ref syncedBooleans);
-                    animatorParameterNames.Add(parameter.name);
+
+                    foreach (AnimatorControllerParameter parameter in controller.parameters)
+                    {
+                        if (animatorParameterNames.Contains(parameter.name))
+                            continue;
+
+                        CountParameterTypes(parameter, ref syncedValues, ref syncedBooleans);
+                        animatorParameterNames.Add(parameter.name);
+                    }
                 }
             }
+            else if (prop != null) {
+                return -1;
+            }
+
 
             // ChilloutVR does not count these in-game. Idk why CCK does...
             // foreach (CVRAdvancedSettingsEntry entry in avatar.avatarSettings.settings)
@@ -92,7 +101,7 @@ namespace NAK.SimpleAAS.Components
 
         public bool IsInvalid()
         {
-            return avatar == null ||
+            return (avatar == null && prop == null) ||
                    overrideController == null ||
                    customControllers.All(c => c == null);
         }

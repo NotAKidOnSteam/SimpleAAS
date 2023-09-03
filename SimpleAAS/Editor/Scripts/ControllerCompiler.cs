@@ -36,26 +36,27 @@ namespace NAK.SimpleAAS
 {
     public class ControllerCompiler
     {
-        public static void CompileControllers(NAKSimpleAAS script)
-        {
+        public static void CompileControllers(NAKSimpleAAS script) {
+            MonoBehaviour behavior = script.avatar != null ? script.avatar : script.prop;
             AnimatorController resultController = MergeMultipleControllers(
                 script.customControllers,
                 null,
                 true,
                 false,
-                script.avatar.gameObject.name
+                behavior.name
             );
 
             if (script.overrideController != null)
             {
                 script.overrideController.runtimeAnimatorController = resultController;
-                script.avatar.overrides = script.overrideController;
+                if (script.avatar != null)
+                    script.avatar.overrides = script.overrideController;
             }
 
-            if (script.avatar.gameObject.TryGetComponent<Animator>(out Animator animator))
+            if (behavior.gameObject.TryGetComponent<Animator>(out Animator animator))
                 animator.runtimeAnimatorController = script.overrideController;
 
-            EditorUtility.SetDirty(script.avatar);
+            EditorUtility.SetDirty(behavior);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
@@ -65,10 +66,11 @@ namespace NAK.SimpleAAS
         {
             static CompileControllersOnBuild()
             {
-                CCK_BuildUtility.PreAvatarBundleEvent.AddListener(OnPreBundleEvent);
+                CCK_BuildUtility.PreAvatarBundleEvent.AddListener(OnPreAvatarBundleEvent);
+                CCK_BuildUtility.PrePropBundleEvent.AddListener(OnPrePropBundleEvent);
             }
 
-            private static void OnPreBundleEvent(GameObject uploadedObject)
+            private static void OnPreAvatarBundleEvent(GameObject uploadedObject)
             {
                 Scene targetScene = uploadedObject.scene;
                 var allAASComponents = targetScene.GetRootGameObjects()
@@ -78,6 +80,17 @@ namespace NAK.SimpleAAS
                     allAASComponents.FirstOrDefault(aas => aas.avatar.gameObject == uploadedObject);
 
                 if (targetAvatar != null) CompileControllers(targetAvatar);
+            }
+
+            private static void OnPrePropBundleEvent(GameObject uploadedObject)
+            {
+                Scene targetScene = uploadedObject.scene;
+                var allAASComponents = targetScene.GetRootGameObjects()
+                    .SelectMany(x => x.GetComponentsInChildren<NAKSimpleAAS>(true));
+
+                NAKSimpleAAS targetProp = allAASComponents.FirstOrDefault(aas => aas.prop.gameObject == uploadedObject);
+
+                if (targetProp != null) CompileControllers(targetProp);
             }
         }
     }

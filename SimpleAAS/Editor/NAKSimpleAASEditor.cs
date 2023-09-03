@@ -13,6 +13,7 @@ namespace NAK.SimpleAAS
         #region Variables
 
         private SerializedProperty _avatar;
+        private SerializedProperty _prop;
         private SerializedProperty _overrideController;
         private SerializedProperty _customControllers;
         private ReorderableList _controllerReorderableList;
@@ -24,6 +25,7 @@ namespace NAK.SimpleAAS
         private void OnEnable()
         {
             _avatar = serializedObject.FindProperty(nameof(NAKSimpleAAS.avatar));
+            _prop = serializedObject.FindProperty(nameof(NAKSimpleAAS.prop));
             _overrideController = serializedObject.FindProperty(nameof(NAKSimpleAAS.overrideController));
             _customControllers = serializedObject.FindProperty(nameof(NAKSimpleAAS.customControllers));
 
@@ -38,18 +40,23 @@ namespace NAK.SimpleAAS
         public override void OnInspectorGUI()
         {
             NAKSimpleAAS script = (NAKSimpleAAS)target;
+            var isAvatar = script.avatar != null;
+            var isProp = script.prop != null;
             serializedObject.UpdateIfRequiredOrScript();
 
-            EditorGUILayout.PropertyField(_avatar);
+            if (!isProp) EditorGUILayout.PropertyField(_avatar);
+            if (!isAvatar) EditorGUILayout.PropertyField(_prop);
             EditorGUILayout.PropertyField(_overrideController);
             EditorGUILayout.Space();
 
-            var parameterUsage = script.GetParameterSyncUsage();
-            EditorGUI.ProgressBar(
-                EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight),
-                parameterUsage / 3200f,
-                parameterUsage + " of 3200 Synced Bits used."
-            );
+            if (isAvatar) {
+                var parameterUsage = script.GetParameterSyncUsage();
+                EditorGUI.ProgressBar(
+                    EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight),
+                    parameterUsage / 3200f,
+                    parameterUsage + " of 3200 Synced Bits used."
+                );
+            }
 
             _controllerReorderableList.DoLayoutList();
 
@@ -68,7 +75,7 @@ namespace NAK.SimpleAAS
 
         private void DrawControllerListHeader(Rect rect)
         {
-            EditorGUI.LabelField(rect, "Avatar Controllers");
+            EditorGUI.LabelField(rect, "Controllers");
         }
 
         private void DrawControllerListItems(Rect rect, int index, bool isActive, bool isFocused)
